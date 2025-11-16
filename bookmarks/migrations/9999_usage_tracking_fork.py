@@ -8,25 +8,22 @@ import django.db.models.deletion
 
 
 def table_exists(table_name):
-    """Check if a table exists in the database"""
+    """Check if a table exists in the database (SQLite compatible)"""
     with connection.cursor() as cursor:
         cursor.execute("""
             SELECT COUNT(*)
-            FROM information_schema.tables
-            WHERE table_name = %s
+            FROM sqlite_master
+            WHERE type='table' AND name=?
         """, [table_name])
         return cursor.fetchone()[0] > 0
 
 
 def column_exists(table_name, column_name):
-    """Check if a column exists in a table"""
+    """Check if a column exists in a table (SQLite compatible)"""
     with connection.cursor() as cursor:
-        cursor.execute("""
-            SELECT COUNT(*)
-            FROM information_schema.columns
-            WHERE table_name = %s AND column_name = %s
-        """, [table_name, column_name])
-        return cursor.fetchone()[0] > 0
+        cursor.execute(f"PRAGMA table_info({table_name})")
+        columns = [row[1] for row in cursor.fetchall()]
+        return column_name in columns
 
 
 def migrate_old_usage_data(apps, schema_editor):
