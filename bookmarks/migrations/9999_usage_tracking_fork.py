@@ -76,7 +76,7 @@ class Migration(migrations.Migration):
 
     dependencies = [
         migrations.swappable_dependency(settings.AUTH_USER_MODEL),
-        ("bookmarks", "0047_userprofile_enable_usage_tracking"),
+        ("bookmarks", "0051_fix_normalized_url"),
     ]
 
     operations = [
