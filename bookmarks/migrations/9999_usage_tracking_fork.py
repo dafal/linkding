@@ -69,6 +69,21 @@ def remove_old_access_count(apps, schema_editor):
         print("  → Old access_count column already removed")
 
 
+def add_usage_tracking_if_missing(apps, schema_editor):
+    """
+    Add enable_usage_tracking field to UserProfile if it doesn't exist.
+    This handles cases where migration 9999 already ran without this field.
+    """
+    if not column_exists('bookmarks_userprofile', 'enable_usage_tracking'):
+        with connection.cursor() as cursor:
+            cursor.execute(
+                "ALTER TABLE bookmarks_userprofile ADD COLUMN enable_usage_tracking BOOLEAN DEFAULT 0 NOT NULL"
+            )
+        print("  → Added enable_usage_tracking column to UserProfile")
+    else:
+        print("  → enable_usage_tracking column already exists")
+
+
 class Migration(migrations.Migration):
 
     dependencies = [
@@ -77,6 +92,13 @@ class Migration(migrations.Migration):
     ]
 
     operations = [
+        # Add enable_usage_tracking field to UserProfile
+        migrations.AddField(
+            model_name="userprofile",
+            name="enable_usage_tracking",
+            field=models.BooleanField(default=False),
+        ),
+
         # Create BookmarkUsage table (only if it doesn't exist)
         migrations.CreateModel(
             name="BookmarkUsage",
@@ -132,6 +154,12 @@ class Migration(migrations.Migration):
         # Remove old access_count column
         migrations.RunPython(
             remove_old_access_count,
+            reverse_code=migrations.RunPython.noop,
+        ),
+
+        # Add enable_usage_tracking if missing (for databases where migration already ran)
+        migrations.RunPython(
+            add_usage_tracking_if_missing,
             reverse_code=migrations.RunPython.noop,
         ),
     ]
